@@ -43,11 +43,11 @@
     </style>
   </head>
   <body>
-    <script src="./third_party/three.js/three.js"></script>
-    <script src="./third_party/controls/PointerLockControls.js"></script>
-    <script src="./dist/three.ar.js"></script>
-    <script src="./third_party/three.js/DRACOLoader.js"></script>
-    <script src="./third_party/three.js/GLTFLoader.js"></script>
+    <script src="../third_party/three.js/three.js"></script>
+    <script src="../third_party/controls/PointerLockControls.js"></script>
+    <script src="../dist/three.ar.js"></script>
+    <script src="../third_party/three.js/DRACOLoader.js"></script>
+    <script src="../third_party/three.js/GLTFLoader.js"></script>
   <script id="fragmentShader" type="shader">
   precision mediump float;
   precision mediump int;
@@ -103,271 +103,14 @@
 
     <script>
       var camera, scene, renderer, controls;
+      var mixer = null;
+      var clock = new THREE.Clock();
       /*
       *  실제 ar로 할 때 주의사항
       *  PointerLockControls 제거, three.ar.js로 이용
       *  거리 관련 const는 모두 재설정필요
       *  controls.getObject().position, camera.positiond으로 변경
-      */ 
-
-  //  THREE.portal360
-  var THREEx = THREEx || {};
-  THREEx.Portal360 = function(videoImageURL, doorWidth, doorHeight){
-    
-    var doorCenter = new THREE.Group
-    doorCenter.position.y = doorHeight/2
-    this.object3d = doorCenter
-
-    //////////////////////////////////////////////////////////////////////////////
-    //    build texture360
-    //////////////////////////////////////////////////////////////////////////////
-    var isVideo = videoImageURL.match(/.(mp4|webm|ogv)/i) ? true : false
-    if( isVideo ){
-      var video = document.createElement( 'video' )
-      video.width = 640;
-      video.height = 360;
-      video.loop = true;
-      video.muted = true;
-      video.src = videoImageURL;
-      video.crossOrigin = 'anonymous'
-      video.setAttribute( 'webkit-playsinline', 'webkit-playsinline' );
-      video.play();
-
-      var texture360 = new THREE.VideoTexture( video );
-      texture360.minFilter = THREE.LinearFilter;
-      texture360.format = THREE.RGBFormat;  
-      texture360.flipY = false;   
-    }else{
-      var texture360 = new THREE.TextureLoader().load(videoImageURL)
-      texture360.minFilter = THREE.NearestFilter;
-      texture360.format = THREE.RGBFormat;
-      texture360.flipY = false;   
-    }
-
-    //////////////////////////////////////////////////////////////////////////////
-    //    build mesh
-    //////////////////////////////////////////////////////////////////////////////
-
-    // create insideMesh which is visible IIF inside the portal
-    var insideMesh = this._buildInsideMesh(texture360, doorWidth, doorHeight)
-    doorCenter.add(insideMesh)
-    this.insideMesh = insideMesh
-
-    // create outsideMesh which is visible IIF outside the portal
-    var outsideMesh = this._buildOutsideMesh(texture360, doorWidth, doorHeight)
-    doorCenter.add(outsideMesh)
-    this.outsideMesh = outsideMesh
-
-    // create frameMesh for the frame of the portal
-    var frameMesh = this._buildRectangularFrame(doorWidth/100, doorWidth, doorHeight)
-    doorCenter.add(frameMesh)
-  }
-  ////////////////////////////////////////////////////////////////////////////
-  //    Code Separator
-  ////////////////////////////////////////////////////////////////////////////
-  THREEx.Portal360.buildTransparentMaterial = function(){
-    // if there is a cached version, return it
-    if( THREEx.Portal360.buildTransparentMaterial.material ){
-      return THREEx.Portal360.buildTransparentMaterial.material
-    }
-    var material = new THREE.MeshBasicMaterial({
-      colorWrite: false // only write to z-buf
-    })
-    // an alternative to reach the same visual - this one seems way slower tho. My guess is it is hitting a slow-path in gpu
-    // var material   = new THREE.MeshBasicMaterial();
-    // material.color.set('black')
-    // material.opacity   = 0;
-    // material.blending  = THREE.NoBlending;
-    
-    // cache the material
-    THREEx.Portal360.buildTransparentMaterial.material = material
-    return material   
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  //    Build various cache
-  //////////////////////////////////////////////////////////////////////////////
-  THREEx.Portal360.buildSquareCache = function(){
-    var container = new THREE.Group
-    // add outter cube - invisibility cloak
-    var geometry = new THREE.PlaneGeometry(100,100);
-    var material = THREEx.Portal360.buildTransparentMaterial()
-
-    // 문 오른쪽 가림막
-    var mesh = new THREE.Mesh( geometry, material);
-    mesh.position.x =  geometry.parameters.width/2  + 5
-    mesh.position.y = -geometry.parameters.height/2  + 10 
-    container.add(mesh)
-    
-    // 문 아래 가림막
-    var mesh = new THREE.Mesh( geometry, material);
-    mesh.position.x = -geometry.parameters.width/2 + 5
-    mesh.position.y = -geometry.parameters.height/2 - 0.5
-    container.add(mesh)
-    
-    // 문 왼쪽 가림막 
-    var mesh = new THREE.Mesh( geometry, material);
-    mesh.position.x = -geometry.parameters.width/2 - 5
-    mesh.position.y =  geometry.parameters.height/2 - 10
-    container.add(mesh)
-    
-    // 문 위 가림막
-    var mesh = new THREE.Mesh( geometry, material);
-    mesh.position.x = +geometry.parameters.width/2 - 5
-    mesh.position.y =  geometry.parameters.height/2 + 0.5
-    container.add(mesh)
-
-    return container
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  //    build meshes
-  //////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * create insideMesh which is visible IIF inside the portal
-   */
-  THREEx.Portal360.prototype._buildInsideMesh = function(texture360, doorWidth, doorHeight){
-    var doorInsideCenter = new THREE.Group
-
-    // var squareCache = THREEx.Portal360.buildSquareCache()
-    // squareCache.scale.y = doorWidth
-    // squareCache.scale.y = doorHeight
-    // doorInsideCenter.add( squareCache )
-
-    var geometry = new THREE.PlaneGeometry(doorWidth, doorHeight)
-    var material = THREEx.Portal360.buildTransparentMaterial()
-    // var material = new THREE.MeshNormalMaterial()
-    var mesh = new THREE.Mesh( geometry, material)
-    mesh.rotation.y = Math.PI
-    // mesh.position.z = 0.03
-    doorInsideCenter.add( mesh )
-
-
-    //////////////////////////////////////////////////////////////////////////////
-    //    add 360 sphere
-    //////////////////////////////////////////////////////////////////////////////
-    // add 360 texture
-    // TODO put that in a this.data
-    var radius360Sphere = 100;
-    // var radius360Sphere = 1
-
-    var geometry = new THREE.SphereGeometry( radius360Sphere, 100, 100).rotateZ(Math.PI)
-    var material = new THREE.MeshBasicMaterial( {
-      map: texture360,
-      // opacity: 0.9,
-      side: THREE.BackSide,
-    });
-    // var material = new THREE.MeshNormalMaterial()
-    var sphere360Mesh = new THREE.Mesh( geometry, material );
-    sphere360Mesh.position.z = -0.1
-    sphere360Mesh.rotation.y = Math.PI
-    doorInsideCenter.add(sphere360Mesh)
-    
-    return doorInsideCenter
-  }
-
-  /**
-   * create outsideMesh which is visible IIF outside the portal
-   */
-  THREEx.Portal360.prototype._buildOutsideMesh = function(texture360, doorWidth, doorHeight){
-    var doorOutsideCenter = new THREE.Group
-
-    //////////////////////////////////////////////////////////////////////////////
-    //    add squareCache
-    //////////////////////////////////////////////////////////////////////////////
-    var squareCache = THREEx.Portal360.buildSquareCache()
-    squareCache.scale.y = doorWidth
-    squareCache.scale.y = doorHeight
-    doorOutsideCenter.add( squareCache )
-
-    //////////////////////////////////////////////////////////////////////////////
-    //    add 360 sphere
-    //////////////////////////////////////////////////////////////////////////////
-    // add 360 texture
-    var radius360Sphere = 100
-    // var radius360Sphere = 1
-
-    // build half sphere geometry
-    var geometry = new THREE.SphereGeometry( radius360Sphere, 100, 100, Math.PI, Math.PI, 0, Math.PI).rotateZ(Math.PI)
-    // fix UVs
-    geometry.faceVertexUvs[0].forEach(function(faceUvs){
-      faceUvs.forEach(function(uv){
-        uv.x /= 2
-      })
-    })
-    geometry.uvsNeedUpdate = true
-    var material = new THREE.MeshBasicMaterial( {
-      map: texture360,
-      // opacity: 0.9,
-      side: THREE.BackSide,
-    });
-    // var geometry = new THREE.SphereGeometry( radius360Sphere, 16, 16);
-    // var material = new THREE.MeshNormalMaterial()
-    var sphere360Mesh = new THREE.Mesh( geometry, material );
-    sphere360Mesh.position.z = -0.1
-    doorOutsideCenter.add(sphere360Mesh)
-    
-    return doorOutsideCenter
-  }
-  /**
-   * create frameMesh for the frame of the portal
-   */
-  THREEx.Portal360.prototype._buildRectangularFrame = function(radius, width, height){
-    var container = new THREE.Group()
-    var material = new THREE.MeshNormalMaterial()
-    var material = new THREE.MeshPhongMaterial({
-      color: 'silver',
-      emissive: 'green'
-    })
-
-    var geometryBeamVertical = new THREE.CylinderGeometry(radius, radius, height - radius)
-
-    // mesh right
-    var meshRight = new THREE.Mesh(geometryBeamVertical, material)
-    meshRight.position.x = width/2
-    container.add(meshRight)
-
-    // mesh right
-    var meshLeft = new THREE.Mesh(geometryBeamVertical, material)
-    meshLeft.position.x = -width/2
-    container.add(meshLeft)
-
-    var geometryBeamHorizontal = new THREE.CylinderGeometry(radius, radius, width - radius).rotateZ(Math.PI/2)
-
-    // mesh top
-    var meshTop = new THREE.Mesh(geometryBeamHorizontal, material)
-    meshTop.position.y = height/2
-    container.add(meshTop)
-
-    // mesh bottom
-    var meshBottom = new THREE.Mesh(geometryBeamHorizontal, material)
-    meshBottom.position.y = -height/2
-    container.add(meshBottom)
-
-    return container
-  } 
-
-  //////////////////////////////////////////////////////////////////////////////
-  //    update function
-  //////////////////////////////////////////////////////////////////////////////
-
-  THREEx.Portal360.prototype.update = function () {
-    // determine if the user is isOutsidePortal
-    // var localPosition = new THREE.Vector3()
-    
-    // 실제로 실험하면서 바꿔야할 값
-    var isOutsidePortal = controls.getObject().position.z >= -20 ? true : false
-    
-    // handle mesh visibility based on isOutsidePortal
-    if( isOutsidePortal ){
-      this.outsideMesh.visible = true
-      this.insideMesh.visible = false
-    }else{
-      this.outsideMesh.visible = false
-      this.insideMesh.visible = true
-    }
-  }
+      */
 
       var objects = [];
       var raycaster;
@@ -407,8 +150,7 @@
       } else {
         instructions.innerHTML = 'Your browser doesn\'t seem to support Pointer Lock API';
       }
-      init();
-      animate();
+
       var controlsEnabled = false;
       var moveForward = false;
       var moveBackward = false;
@@ -419,7 +161,15 @@
       var velocity = new THREE.Vector3();
       var direction = new THREE.Vector3();
 
+			updateFunc = [];
+			update = updateGenerator(updateFunc);
+      init().then((d) => {
+				console.log(d);
+				update();
+			});
+
       function init() {
+
         camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
         scene = new THREE.Scene();
         scene.background = new THREE.Color( 0xffffff );
@@ -429,7 +179,7 @@
         scene.add( light );
         controls = new THREE.PointerLockControls( camera );
         scene.add( controls.getObject() );
-        
+
         var onKeyDown = function ( event ) {
           switch ( event.keyCode ) {
             case 38: // up
@@ -474,7 +224,7 @@
             case 68: // d
               moveRight = false;
               break;
-            case 70: //f 
+            case 70: //f
               drawing = false;
               stroke.length = 0;
               strokeIndex += 1;
@@ -490,7 +240,7 @@
         var floorGeometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
         floorGeometry.rotateX( - Math.PI/2 );
 
-        // 정점 섞기 
+        // 정점 섞기
         for ( var i = 0, l = floorGeometry.vertices.length; i < l; i ++ ) {
           var vertex = floorGeometry.vertices[ i ];
           vertex.x += Math.random() * 20 - 10;
@@ -501,7 +251,7 @@
         var floorMaterial = new THREE.MeshBasicMaterial( { vertexColors: THREE.NoColors } );
         floorMaterial.opacity = 0;
         floorMaterial.transparent = true;
-        var floor = new THREE.Mesh( floorGeometry, floorMaterial ); 
+        var floor = new THREE.Mesh( floorGeometry, floorMaterial );
         scene.add( floor );
 
         // objects
@@ -514,66 +264,58 @@
         }
 
         config = {
-          gltfPath: './models/dogs/scene.gltf',
+          gltfPath: '../model/dragon/scene.gltf',
           decoderPath : './third_party/draco/',
           GLTFLoader: THREE.GLTFLoader,
           DRACOLoader: THREE.DRACOLoader
         };
+
         THREE.ARUtils.newLoadModel(config).then(function(gltf) {
-          var blackDog = gltf.scene.children[0].children[0].children[0].children[4];
-          var brownDog = gltf.scene.children[0].children[0].children[0].children[5]
-          blackDog.position.x = 1;
-          blackDog.position.y = 0;
-          blackDog.position.z = -2;
-          blackDog.rotation.x = Math.PI*3/2;
-          blackDog.scale.x = 5;
-          blackDog.scale.y = 5;
-          blackDog.scale.z = 5;
+          var dragon = gltf.scene;
+          dragon.scale.set(100,100,100);
+          mixer = new THREE.AnimationMixer( dragon );
+          var animations = gltf.animations;
+          if ( animations && animations.length ) {
 
-          brownDog.position.x = 7;
-          brownDog.position.y = 0;
-          brownDog.position.z = -2;
-          brownDog.rotation.x = Math.PI*3/2;          
-          brownDog.scale.x = 5;
-          brownDog.scale.y = 5;
-          brownDog.scale.z = 5;
+            // for ( var i = 0; i < animations.length; i ++ ) {
+              var animation = animations[ 0 ];
+              console.log(animation)
+              // There's .3333 seconds junk at the tail of the Monster animation that
+              // keeps it from looping cleanly. Clip it at 3 seconds
+               animation.duration = 0.8;
+
+            var action = mixer.clipAction( animation );
+            action.setLoop(THREE.LoopOnce, 1);
+            console.log(action);
+            action.play();
+
+            // }
+          }
+
+          scene.add(dragon);
+          // clip = gltf.animations[1];
+          // var action = mixer.existingAction( clip );
+          // console.log(action)
+          // action.play();
 
 
-          // var animations = gltf.animations;
-          // if ( animations && animations.length ) {
-          //   mixer = new THREE.AnimationMixer( blackDog );
-          //   for ( var i = 0; i < animations.length; i ++ ) {
-          //     var animation = animations[ i ];
-          //     // There's .3333 seconds junk at the tail of the Monster animation that
-          //     // keeps it from looping cleanly. Clip it at 3 seconds
-          //     animation.duration = 4;
-          //     mixer.clipAction( animation ).play();
 
-          //   }
-          // }
-          // console.log(mixer)
-          // scene.add(gltf.scene)
-          scene.add(blackDog);  
-          scene.add(brownDog);
+
       // gltf.animations; // Array<THREE.AnimationClip>
       // gltf.scene; // THREE.Scene
       // gltf.scenes; // Array<THREE.Scene>
       // gltf.cameras; // Array<THREE.Camera>
       // gltf.asset; // Object
         });
-        
-        // init portal
-        portalDoor = new THREEx.Portal360('./videos/hogrider.mp4', 10, 20);
-        portalDoor.object3d.position.z =  -20;
-        scene.add( portalDoor.object3d );
-        // objects.push( portalDoor );
-        //
+
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
         //
         window.addEventListener( 'resize', onWindowResize, false );
+
+				return new Promise((resolve, reject) => resolve("resolve"));
 
       } // end init()
 
@@ -583,48 +325,57 @@
         camera.updateProjectionMatrix();
         renderer.setSize( window.innerWidth, window.innerHeight );
       }
-      function animate() {
-  
-    renderer.clearColor();
 
-        requestAnimationFrame( animate );
-        if ( controlsEnabled === true ) {
-          raycaster.ray.origin.copy( controls.getObject().position );
-          raycaster.ray.origin.y -= 10;
-          var intersections = raycaster.intersectObjects( objects );
-          var onObject = intersections.length > 0;
-          var time = performance.now();
-          var delta = ( time - prevTime ) / 1000;
-          velocity.x -= velocity.x * 10.0 * delta;
-          velocity.z -= velocity.z * 10.0 * delta;
-          velocity.y -= 9.8 * 50.0 * delta; // 100.0 = mass
-          direction.z = Number( moveForward ) - Number( moveBackward );
-          direction.x = Number( moveLeft ) - Number( moveRight );
-          direction.normalize(); // this ensures consistent movements in all directions
-          if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
-          if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
-          if ( onObject === true ) {
-            velocity.y = Math.max( 0, velocity.y );
-            canJump = true;
-          }
-          controls.getObject().translateX( velocity.x * delta );
-          controls.getObject().translateY( velocity.y * delta );
-          controls.getObject().translateZ( velocity.z * delta );
-          if ( controls.getObject().position.y < 10 ) {
-            velocity.y = 0;
-            controls.getObject().position.y = 10;
-            canJump = true;
-          }
-          prevTime = time;
-        }
 
-      // Render our three.js virtual scene
-        renderer.clearDepth();
-        portalDoor.update();
+			function updateGenerator(updateFunc) {
+		 	 var args = updateFunc;
 
-      renderer.render( scene, camera );
-    }
-  
+		 	 animate = function() {
+		 	  // Clears color from the frame before rendering the camera (arView) or scene.
+
+				    	renderer.clearColor();
+	            if (mixer) mixer.update(clock.getDelta());
+							args.forEach((f)=>{console.log(f)})
+		        	requestAnimationFrame( animate );
+			        if ( controlsEnabled === true ) {
+
+				          raycaster.ray.origin.copy( controls.getObject().position );
+				          raycaster.ray.origin.y -= 10;
+				          var intersections = raycaster.intersectObjects( objects );
+				          var onObject = intersections.length > 0;
+				          var time = performance.now();
+				          var delta = ( time - prevTime ) / 1000;
+				          velocity.x -= velocity.x * 10.0 * delta;
+				          velocity.z -= velocity.z * 10.0 * delta;
+				          velocity.y -= 9.8 * 50.0 * delta; // 100.0 = mass
+				          direction.z = Number( moveForward ) - Number( moveBackward );
+				          direction.x = Number( moveLeft ) - Number( moveRight );
+				          direction.normalize(); // this ensures consistent movements in all directions
+				          if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
+				          if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+				          if ( onObject === true ) {
+				            velocity.y = Math.max( 0, velocity.y );
+				            canJump = true;
+
+				          }
+				          controls.getObject().translateX( velocity.x * delta );
+				          controls.getObject().translateY( velocity.y * delta );
+				          controls.getObject().translateZ( velocity.z * delta );
+				          if ( controls.getObject().position.y < 10 ) {
+				            velocity.y = 0;
+				            controls.getObject().position.y = 10;
+				            canJump = true;
+
+				          }
+				          prevTime = time;
+				        }
+				      // Render our three.js virtual scene
+			        renderer.clearDepth();
+				      renderer.render( scene, camera );
+		 	}
+
+			return animate
+		}
 
     </script>
   </body>
