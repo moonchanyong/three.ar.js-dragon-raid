@@ -215,8 +215,8 @@ async function init() {
  * The render loop, called once per frame. Handles updating
  * our scene and rendering.
  */
- function updateGenerator() {
-	 // var args = Array.prototype.slice.call(arguments);
+ function updateGenerator(args) {
+
 
 	  var animate = function() {
 	  // Clears color from the frame before rendering the camera (arView) or scene.
@@ -262,7 +262,7 @@ async function init() {
 
 
 		// custom update
-		// args.forEach(function(func) {func()});
+		args.forEach(function(func) {func()});
 
 	  renderer.clearDepth();
 	  renderer.render(scene, camera);
