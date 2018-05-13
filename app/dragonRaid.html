@@ -86,8 +86,8 @@ var prevTime, raycaster, shooting, dragon;
 var projectile = [];
 var updateFunc = [];
 var clock = new THREE.Clock();
-var ProjectileSpeed = 1;
-var projectileLimit = 100;
+var ProjectileSpeed = 5;
+var projectileLimit = 50;
 var projectileIndex= 0;
 
 // declare function
@@ -118,8 +118,7 @@ makeProjectile = function(makeShape, _velocity) {
     limit: 0,
     name: name,
     obj: object,
-    // velocity: _velocity.applyQuaternion(new Three.vector3().quaternion)
-    velocity: new THREE.Vector3()
+    velocity: _velocity.applyQuaternion(camera.quaternion)
   }
 }
 
