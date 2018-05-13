@@ -71,57 +71,21 @@
       <a href="https://developers.google.com/ar/develop/web/getting-started#examples">examples</a>
     </span>
 </div> -->
-<script src="../third_party/three.js/three.js"></script>
-<script src="../third_party/three.js/VRControls.js"></script>
-<script src="../third_party/three.js/OBJLoader.js"></script>
-<script src="../third_party/three.js/MTLLoader.js"></script>
-<script src="../dist/three.ar.js"></script>
-<script src="../third_party/three.js/DRACOLoader.js"></script>
-<script src="../third_party/three.js/GLTFLoader.js"></script>
+<script src="./third_party/three.js/three.js"></script>
+<script src="./third_party/three.js/VRControls.js"></script>
+<script src="./third_party/three.js/OBJLoader.js"></script>
+<script src="./third_party/three.js/MTLLoader.js"></script>
+<script src="./dist/three.ar.js"></script>
+<script src="./third_party/three.js/DRACOLoader.js"></script>
+<script src="./third_party/three.js/GLTFLoader.js"></script>
 <script>
-// declare
-let vrDisplay, vrControls, arView;
-let canvas, camera, scene, renderer;
-let prevTime, raycaster, shooting;
-let projectile = [];
-let updateFunc = [];
-let dragon;
-const ProjectileSpeed = 5;
-const projectileLimit = 50;
 
-
-// declare function
-rmProjectil = (rmProjectilList) => {
-  let descIndex = 0;
-  for (i of rmProjectilList) {
-   // let selectedObject = scene.getObjectByName(object.name);
-   scene.remove(Projectile[i].obj)
-   Projectile.splice(i-descIndex, 1);
-   descIndex+=1;
-  }
-}
-makeSphere = function() {
-  let geometry = new THREE.SphereGeometry( 5, 32, 32 );
-  let material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
-  let sphere = new THREE.Mesh( geometry, material );
-  sphere.position.copy(controls.getObject().position)
-  console.log(controls.getObject().quaternion)
-  scene.add( sphere );
-  return sphere;
-}
-//  makeShape is return object
-makeProjectile = function(makeShape, _velocity) {
-  let object = makeShape();
-  let name = 'projectile'+projectileIndex;
-  projectileIndex+=1;
-  return {
-    limit: 0,
-    name: name,
-    obj: object,
-    velocity: _velocity.applyQuaternion(controls.getObject().quaternion)
-  }
-}
-
+var vrDisplay, vrControls, arView;
+var canvas, camera, scene, renderer;
+var BOX_DISTANCE = 1.5;
+var BOX_SIZE = 0.25;
+var BOX_QUANTITY = 1;
+var boxesAdded = false;
 
 /**
  * Use the `getARDisplay()` utility to leverage the WebVR API
@@ -129,25 +93,296 @@ makeProjectile = function(makeShape, _velocity) {
  * a valid display if found. Otherwise, display the unsupported
  * browser message.
  */
-update = updateGenerator(updateFunc);
 THREE.ARUtils.getARDisplay().then(function (display) {
   if (display) {
     vrDisplay = display;
     init();
-    // .then((d) => {
-      console.log('its okay');
-      update();
-    // });
   } else {
     THREE.ARUtils.displayUnsupportedMessage();
   }
 });
 
+
+
 var loader = new THREE.GLTFLoader();
+var portalDoor;
+var puppys;
+var isaddedpuppuys = false;
 
-// async
+  //  THREE.portal360
+  var THREEx = THREEx || {};
+  THREEx.Portal360 = function(videoImageURL, doorWidth, doorHeight){
+
+    var doorCenter = new THREE.Group
+    doorCenter.position.y = doorHeight/2
+    this.object3d = doorCenter;
+
+    //////////////////////////////////////////////////////////////////////////////
+    //    build texture360
+    //////////////////////////////////////////////////////////////////////////////
+    var isVideo = videoImageURL.match(/.(mp4|webm|ogv)/i) ? true : false
+    if( isVideo ){
+      var video = document.createElement( 'video' )
+      video.width = 640;
+      video.height = 360;
+      video.loop = true;
+      video.muted = true;
+      video.src = videoImageURL;
+      video.crossOrigin = 'anonymous'
+      video.setAttribute( 'webkit-playsinline', 'webkit-playsinline' );
+      video.play();
+
+      var texture360 = new THREE.VideoTexture( video );
+      texture360.minFilter = THREE.LinearFilter;
+      texture360.format = THREE.RGBFormat;
+      texture360.flipY = false;
+
+    }else{
+      var texture360 = new THREE.TextureLoader().load(videoImageURL)
+      texture360.minFilter = THREE.NearestFilter;
+      texture360.format = THREE.RGBFormat;
+      texture360.flipY = false;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //    build mesh
+    //////////////////////////////////////////////////////////////////////////////
+
+    // create insideMesh which is visible IIF inside the portal
+    var insideMesh = this._buildInsideMesh(texture360, doorWidth, doorHeight)
+    doorCenter.add(insideMesh)
+    this.insideMesh = insideMesh;
+
+    // create outsideMesh which is visible IIF outside the portal
+    var outsideMesh = this._buildOutsideMesh(texture360, doorWidth, doorHeight)
+    doorCenter.add(outsideMesh)
+    this.outsideMesh = outsideMesh;
+
+    // create frameMesh for the frame of the portal
+    var frameMesh = this._buildRectangularFrame(doorWidth/100, doorWidth, doorHeight)
+    doorCenter.add(frameMesh);
+  }
+  ////////////////////////////////////////////////////////////////////////////
+  //    Code Separator
+  ////////////////////////////////////////////////////////////////////////////
+  THREEx.Portal360.buildTransparentMaterial = function(){
+    // if there is a cached version, return it
+    if( THREEx.Portal360.buildTransparentMaterial.material ){
+      return THREEx.Portal360.buildTransparentMaterial.material
+    }
+    var material = new THREE.MeshBasicMaterial({
+      colorWrite: false // only write to z-buf
+    })
+    // an alternative to reach the same visual - this one seems way slower tho. My guess is it is hitting a slow-path in gpu
+    // var material   = new THREE.MeshBasicMaterial();
+    // material.color.set('black')
+    // material.opacity   = 0;
+    // material.blending  = THREE.NoBlending;
+
+    // cache the material
+    THREEx.Portal360.buildTransparentMaterial.material = material
+
+    return material
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  //    Build various cache
+  //////////////////////////////////////////////////////////////////////////////
+  THREEx.Portal360.buildSquareCache = function(){
+    var container = new THREE.Group
+    // add outter cube - invisibility cloak
+    var geometry = new THREE.PlaneGeometry(50,50);
+    var material = THREEx.Portal360.buildTransparentMaterial()
+
+    // 문 오른쪽 가림막
+    var mesh = new THREE.Mesh( geometry, material);
+    mesh.position.x =  geometry.parameters.width/2  + 0.5
+    mesh.position.y = -geometry.parameters.height/2  + 0.5
+    container.add(mesh)
+
+    // 문 아래 가림막
+    var mesh = new THREE.Mesh( geometry, material);
+    mesh.position.x = -geometry.parameters.width/2 + 0.5
+    mesh.position.y = -geometry.parameters.height/2 - 0.5
+    container.add(mesh)
+
+    // 문 왼쪽 가림막
+    var mesh = new THREE.Mesh( geometry, material);
+    mesh.position.x = -geometry.parameters.width/2 - 0.5
+    mesh.position.y =  geometry.parameters.height/2 - 0.5
+    container.add(mesh)
+
+    // 문 위 가림막
+    var mesh = new THREE.Mesh( geometry, material);
+    mesh.position.x = +geometry.parameters.width/2 - 0.5
+    mesh.position.y =  geometry.parameters.height/2 + 0.5
+    container.add(mesh)
+
+    return container
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  //    build meshes
+  //////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * create insideMesh which is visible IIF inside the portal
+   */
+  THREEx.Portal360.prototype._buildInsideMesh = function(texture360, doorWidth, doorHeight){
+    var doorInsideCenter = new THREE.Group
+
+    // var squareCache = THREEx.Portal360.buildSquareCache()
+    // squareCache.scale.y = doorWidth
+    // squareCache.scale.y = doorHeight
+    // doorInsideCenter.add( squareCache )
+
+    var geometry = new THREE.PlaneGeometry(doorWidth, doorHeight)
+    var material = THREEx.Portal360.buildTransparentMaterial()
+    // var material = new THREE.MeshNormalMaterial()
+    var mesh = new THREE.Mesh( geometry, material)
+    mesh.rotation.y = Math.PI
+    // mesh.position.z = 0.03
+    doorInsideCenter.add( mesh )
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    //    add 360 sphere
+    //////////////////////////////////////////////////////////////////////////////
+    // add 360 texture
+    // TODO put that in a this.data
+    var radius360Sphere = 10;
+    // var radius360Sphere = 1
+
+    var geometry = new THREE.SphereGeometry( radius360Sphere, 16, 16).rotateZ(Math.PI)
+    var material = new THREE.MeshBasicMaterial( {
+      map: texture360,
+
+      // opacity: 0.9,
+      side: THREE.DoubleSide
+    });
+    // var material = new THREE.MeshNormalMaterial()
+    var sphere360Mesh = new THREE.Mesh( geometry, material );
+    sphere360Mesh.position.z = -0.1
+    sphere360Mesh.rotation.y = Math.PI
+    doorInsideCenter.add(sphere360Mesh)
+
+    return doorInsideCenter
+  }
+
+  /**
+   * create outsideMesh which is visible IIF outside the portal
+   */
+  THREEx.Portal360.prototype._buildOutsideMesh = function(texture360, doorWidth, doorHeight){
+    var doorOutsideCenter = new THREE.Group
+
+    //////////////////////////////////////////////////////////////////////////////
+    //    add squareCache
+    //////////////////////////////////////////////////////////////////////////////
+    var squareCache = THREEx.Portal360.buildSquareCache()
+    squareCache.scale.y = doorWidth
+    squareCache.scale.y = doorHeight
+    doorOutsideCenter.add( squareCache )
+
+    //////////////////////////////////////////////////////////////////////////////
+    //    add 360 sphere
+    //////////////////////////////////////////////////////////////////////////////
+    // add 360 texture
+    var radius360Sphere = 10
+    // var radius360Sphere = 1
+
+    // build half sphere geometry
+    var geometry = new THREE.SphereGeometry( radius360Sphere, 16, 16, Math.PI, Math.PI, 0, Math.PI).rotateZ(Math.PI)
+    // fix UVs
+    geometry.faceVertexUvs[0].forEach(function(faceUvs){
+      faceUvs.forEach(function(uv){
+        uv.x /= 2
+      })
+    })
+    geometry.uvsNeedUpdate = true
+    var material = new THREE.MeshBasicMaterial( {
+      map: texture360,
+      // color: 'silver',
+      // emissive: 'green',
+      // opacity: 0.9,
+      side: THREE.DoubleSide
+    });
+    // var geometry = new THREE.SphereGeometry( radius360Sphere, 16, 16);
+    // var material = new THREE.MeshNormalMaterial()
+    var sphere360Mesh = new THREE.Mesh( geometry, material );
+    sphere360Mesh.position.z = -0.1
+    sphere360Mesh.position.y = 0
+    sphere360Mesh.position.x = 0
+    doorOutsideCenter.add(sphere360Mesh);
+
+    return doorOutsideCenter
+  }
+  /**
+   * create frameMesh for the frame of the portal
+   */
+  THREEx.Portal360.prototype._buildRectangularFrame = function(radius, width, height){
+    var container = new THREE.Group()
+    var material = new THREE.MeshNormalMaterial()
+    var material = new THREE.MeshPhongMaterial({
+      color: 'silver',
+      emissive: 'yellow'
+    })
+
+    var geometryBeamVertical = new THREE.CylinderGeometry(radius, radius, height - radius)
+
+    // mesh right
+    var meshRight = new THREE.Mesh(geometryBeamVertical, material)
+    meshRight.position.x = width/2
+    // meshRight.position.z = -1
+    container.add(meshRight)
+
+    // mesh right
+    var meshLeft = new THREE.Mesh(geometryBeamVertical, material)
+    meshLeft.position.x = -width/2
+    // meshLeft.position.z = -1
+    container.add(meshLeft)
+
+    var geometryBeamHorizontal = new THREE.CylinderGeometry(radius, radius, width - radius).rotateZ(Math.PI/2)
+
+    // mesh top
+    var meshTop = new THREE.Mesh(geometryBeamHorizontal, material)
+    meshTop.position.y = height/2
+    // meshTop.position.z = -1
+    container.add(meshTop)
+
+    // mesh bottom
+    var meshBottom = new THREE.Mesh(geometryBeamHorizontal, material)
+    meshBottom.position.y = -height/2
+    // meshBottom.position.z = -1
+    container.add(meshBottom)
+
+
+    return container
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  //    update function
+  //////////////////////////////////////////////////////////////////////////////
+
+  THREEx.Portal360.prototype.update = function () {
+    // determine if the user is isOutsidePortal
+    // var localPosition = new THREE.Vector3()
+    // this.object3d.worldToLocal(localPosition)
+    // 실제로 실험하면서 바꿔야할 값
+    var isOutsidePortal = (camera.position.z > -2) ? true : false
+
+    // handle mesh visibility based on isOutsidePortal
+    if( isOutsidePortal ){
+      this.outsideMesh.visible = true
+      this.insideMesh.visible = false
+    }else{
+      this.outsideMesh.visible = false
+      this.insideMesh.visible = true
+    }
+  }
+
+
+
 function init() {
-
   // Setup the three.js rendering environment
   renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -174,105 +409,151 @@ function init() {
     vrDisplay.depthNear,
     vrDisplay.depthFar );
 
+
+        config = {
+          gltfPath: './models/dogs/scene.gltf',
+          decoderPath : './third_party/draco/',
+          GLTFLoader: THREE.GLTFLoader,
+          DRACOLoader: THREE.DRACOLoader
+        };
+        THREE.ARUtils.newLoadModel(config).then(function(gltf) {
+          var blackDog = gltf.scene.children[0].children[0].children[0].children[4];
+          var brownDog = gltf.scene.children[0].children[0].children[0].children[5]
+          blackDog.position.x = camera.position.x - 1;
+          blackDog.position.y = camera.position.y - 1;
+          blackDog.position.z = -1;
+          blackDog.rotation.x = Math.PI*3/2;
+          blackDog.scale.x = 0.5;
+          blackDog.scale.y = 0.5;
+          blackDog.scale.z = 0.5;
+
+          brownDog.position.x = camera.position.x + 1;
+          brownDog.position.y = camera.position.y - 1;
+          brownDog.position.z = -1;
+          brownDog.rotation.x = Math.PI*3/2;
+          brownDog.scale.x = 0.5;
+          brownDog.scale.y = 0.5;
+          brownDog.scale.z = 0.5;
+
+
+          // var animations = gltf.animations;
+          // if ( animations && animations.length ) {
+          //   mixer = new THREE.AnimationMixer( blackDog );
+          //   for ( var i = 0; i < animations.length; i ++ ) {
+          //     var animation = animations[ i ];
+          //     // There's .3333 seconds junk at the tail of the Monster animation that
+          //     // keeps it from looping cleanly. Clip it at 3 seconds
+          //     animation.duration = 4;
+          //     mixer.clipAction( animation ).play();
+
+          //   }
+          // }
+          // console.log(mixer)
+          // scene.add(gltf.scene)
+          scene.add(blackDog);
+          scene.add(brownDog);
+      // gltf.animations; // Array<THREE.AnimationClip>
+      // gltf.scene; // THREE.Scene
+      // gltf.scenes; // Array<THREE.Scene>
+      // gltf.cameras; // Array<THREE.Camera>
+      // gltf.asset; // Object
+        });
+//   THREE.DRACOLoader.setDecoderPath( './third_party/draco/');
+//   loader.setDRACOLoader( new THREE.DRACOLoader() );
+//   loader.load(
+//     // resource URL
+//     './models/dogs/scene.gltf',
+//     // called when the resource is loaded
+//     function ( gltf ) {
+//       puppys = gltf.scenes;
+//       gltf.scene.position.x = 1;
+//       gltf.scene.position.y = 0;
+//       gltf.scene.position.z = -2;
+//       // gltf.scene.scale = new THREE.Vector3( 0.01, 0.01, 0.01 );
+//       // gltf.asset.scale = new THREE.Vector3( 0.1, 0.1, 0.1 );
+//       gltf.scene.scale.x = 0.01;
+//       gltf.scene.scale.y = 0.01;
+//       gltf.scene.scale.z = 0.01;
+//       // alert(gltf.scene.scale.z);
+
+//       scene.add( gltf.scene );
+
+//       // gltf.animations; // Array<THREE.AnimationClip>
+//       // gltf.scene; // THREE.Scene
+//       // gltf.scenes; // Array<THREE.Scene>
+//       // gltf.cameras; // Array<THREE.Camera>
+//       // gltf.asset; // Object
+
+//     },
+//     // called when loading is in progresses
+//     function ( xhr ) {
+
+//       console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+//     },
+//     // called when loading has errors
+//     function ( error ) {
+
+//       alert( 'An error happened' );
+
+//     }
+// ); // end load model
   // VRControls is a utility from three.js that applies the device's
   // orientation/position to the perspective camera, keeping our
   // real world and virtual world in sync.
   vrControls = new THREE.VRControls(camera);
-  raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-  // await THREE.ARUtils.newLoadModel(config).then(function(gltf) {
-  //   dragon = gltf.scene.children[0].children[0].children[0].children[0];
-  //   mixer = new THREE.AnimationMixer( dragon );
-  //   var animations = gltf.animations;
-  //
-  //   if ( animations && animations.length ) {
-  //     var animation = animations[4];
-  //     var action = mixer.clipAction( animation );
-  //     action.play();
-  //   }
-  //
-  //   dragon.scale.set(10,10,10);
-  //   dragon.rotateX( - Math.PI/2 );
-  //   dragon.position.x = 0;
-  //   dragon.position.y = 0;
-  //   dragon.position.z = -10;
-  //   scene.add(dragon);
-  // });
 
   // Bind our event handlers
   window.addEventListener('resize', onWindowResize, false);
-  renderer.domElement.addEventListener('touchstart', function(event) {
-    shooting= true;
- });
- // Stop the current draw stroke when the user finishes the touch.
- renderer.domElement.addEventListener('touchend', function(event) {
-    shooting = false;
- });
+  // canvas.addEventListener('touchstart', onClick, false);
 
-  // return new Promise((resolve, reject) => resolve("resolve"));
-} // end init
+  portalDoor = new THREEx.Portal360('./images/jingu.png', 1, 2);
+  // portalDoor = new THREEx.Portal360('./videos/city.mp4', 1, 2);
+  portalDoor.object3d.position.x = camera.position.x
+  portalDoor.object3d.position.y = camera.position.y-0.5  ;
+  portalDoor.object3d.position.z = -2 ;
+  scene.add( portalDoor.object3d );
+  // Kick off the render loop!
+  update();
+}
 
 /**
  * The render loop, called once per frame. Handles updating
  * our scene and rendering.
  */
- function updateGenerator() {
-	 // var args = Array.prototype.slice.call(arguments);
+function update() {
+  // Clears color from the frame before rendering the camera (arView) or scene.
+  renderer.clearColor();
 
-	  let update = () => {
-	  // Clears color from the frame before rendering the camera (arView) or scene.
-	  renderer.clearColor();
+  // Render the device's camera stream on screen first of all.
+  // It allows to get the right pose synchronized with the right frame.
+  arView.render();
 
-	  // Render the device's camera stream on screen first of all.
-	  // It allows to get the right pose synchronized with the right frame.
-	  arView.render();
-    if (mixer) mixer.update(clock.getDelta());
-    let time = performance.now();
-    let delta = ( time - prevTime ) / 1000;
-    prevTime = time;
-	  // Update our camera projection matrix in the event that
-	  // the near or far planes have updated
+  // Update our camera projection matrix in the event that
+  // the near or far planes have updated
+  camera.updateProjectionMatrix();
 
-    camera.updateProjectionMatrix();
-
-    // Update our perspective camera's positioning
-    vrControls.update();
-    // // shoot
-    // if (shooting) projectile.push(makeProjectile(makeSphere, new THREE.Vector3(1,1,1)));
-    //
-    // let rmProjectilList = [];
-    // // animate Projectile
-    // projectile.forEach((d, index, object) => {
-    //   // move Projectole
-    //   d['obj'].translateX(d['velocity'].x * ProjectileSpeed * delta);
-    //   d['obj'].translateY(d['velocity'].y * ProjectileSpeed * delta);
-    //   d['obj'].translateZ(d['velocity'].z * ProjectileSpeed * delta);
-    //   d['limit'] +=1;
-    //   raycaster.ray.origin.copy(d['obj'].position);
-    //   // let intersections = raycaster.intersectObjects(dragon.children);
-    //   // intersections.length > 0;
-    //   let onObject = false;
-    //   if (onObject === true || d['limit'] == projectileLimit) {
-    //     if (onObject) {
-    //       console.log('충돌햇쪄');
-    //     }
-    //     rmProjectilList.push(index);
-    //   }
-    // });
-    // rmProjectil(rmProjectilList);
+  // Update our perspective camera's positioning
+  vrControls.update();
+  portalDoor.update();
+  if(!isaddedpuppuys){
 
 
-		// custom update
-		args.forEach(func => {func()});
 
-	  renderer.clearDepth();
-	  renderer.render(scene, camera);
+  }
 
-	  // Kick off the requestAnimationFrame to call this function
-	  // when a new VRDisplay frame is rendered
-	  vrDisplay.requestAnimationFrame(update);
-	}
-  return update;
+  // If we have not added boxes yet, and we have positional
+  // information applied to our camera (it can take a few seconds),
+  // and the camera's Y position is not undefined or 0, create boxes
+  // Render our three.js virtual scene
+  renderer.clearDepth();
+  renderer.render(scene, camera);
+
+  // Kick off the requestAnimationFrame to call this function
+  // when a new VRDisplay frame is rendered
+  vrDisplay.requestAnimationFrame(update);
 }
+
 /**
  * On window resize, update the perspective camera's aspect ratio,
  * and call `updateProjectionMatrix` so that we can get the latest
@@ -284,6 +565,40 @@ function onWindowResize () {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+// function onClick (e) {
+//   // If we don't have a touches object, abort
+//   // TODO: is this necessary?
+//   if (!e.touches[0]) {
+//     return;
+//   }
+
+//   // Inspect the event object and generate normalize screen coordinates
+//   // (between 0 and 1) for the screen position.
+//   var x = e.touches[0].pageX / window.innerWidth;
+//   var y = e.touches[0].pageY / window.innerHeight;
+
+//   // Send a ray from the point of click to the real world surface
+//   // and attempt to find a hit. `hitTest` returns an array of potential
+//   // hits.
+//   var hits = vrDisplay.hitTest(x, y);
+
+//   // If a hit is found, just use the first one
+//   if (hits && hits.length) {
+//     var hit = hits[0];
+//     // JSON.stringify(hit)
+//     // Use the `placeObjectAtHit` utility to position
+//     // the cube where the hit occurred
+//     // puppys[0].scale.x = 0.01;
+//     // puppys[0].scale.y = 0.01;
+//     // puppys[0].scale.z = 0.01;
+//     THREE.ARUtils.placeObjectAtHit(puppys[0],  // The object to place
+//                                    hit,   // The VRHit object to move the cube to
+//                                    1,     // Easing value from 0 to 1; we want to move
+//                                           // the cube directly to the hit position
+//                                    true); // Whether or not we also apply
+
+//   }
+// }
 </script>
 </body>
 </html>
