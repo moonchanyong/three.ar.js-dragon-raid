@@ -129,7 +129,7 @@ makeProjectile = function(makeShape, _velocity) {
  * a valid display if found. Otherwise, display the unsupported
  * browser message.
  */
-update = updateGenerator(updateFunc);
+var update = updateGenerator(updateFunc);
 THREE.ARUtils.getARDisplay().then(function (display) {
   if (display) {
     vrDisplay = display;
