@@ -225,7 +225,7 @@ async function init() {
 	  // Render the device's camera stream on screen first of all.
 	  // It allows to get the right pose synchronized with the right frame.
 	  arView.render();
-    if (mixer) mixer.update(clock.getDelta());
+    // if (mixer) mixer.update(clock.getDelta());
     var time = performance.now();
     var delta = ( time - prevTime ) / 1000;
     prevTime = time;
