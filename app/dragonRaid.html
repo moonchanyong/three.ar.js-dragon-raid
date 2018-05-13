@@ -176,24 +176,24 @@ async function init() {
   // real world and virtual world in sync.
   vrControls = new THREE.VRControls(camera);
   raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-  await THREE.ARUtils.newLoadModel(config).then(function(gltf) {
-    dragon = gltf.scene.children[0].children[0].children[0].children[0];
-    mixer = new THREE.AnimationMixer( dragon );
-    var animations = gltf.animations;
-
-    if ( animations && animations.length ) {
-      var animation = animations[4];
-      var action = mixer.clipAction( animation );
-      action.play();
-    }
-
-    dragon.scale.set(10,10,10);
-    dragon.rotateX( - Math.PI/2 );
-    dragon.position.x = 0;
-    dragon.position.y = 0;
-    dragon.position.z = -10;
-    scene.add(dragon);
-  });
+  // await THREE.ARUtils.newLoadModel(config).then(function(gltf) {
+  //   dragon = gltf.scene.children[0].children[0].children[0].children[0];
+  //   mixer = new THREE.AnimationMixer( dragon );
+  //   var animations = gltf.animations;
+  //
+  //   if ( animations && animations.length ) {
+  //     var animation = animations[4];
+  //     var action = mixer.clipAction( animation );
+  //     action.play();
+  //   }
+  //
+  //   dragon.scale.set(10,10,10);
+  //   dragon.rotateX( - Math.PI/2 );
+  //   dragon.position.x = 0;
+  //   dragon.position.y = 0;
+  //   dragon.position.z = -10;
+  //   scene.add(dragon);
+  // });
 
   // Bind our event handlers
   window.addEventListener('resize', onWindowResize, false);
@@ -245,8 +245,9 @@ async function init() {
       d['obj'].translateZ(d['velocity'].z * ProjectileSpeed * delta);
       d['limit'] +=1;
       raycaster.ray.origin.copy(d['obj'].position);
-      let intersections = raycaster.intersectObjects(dragon.children);
-      let onObject = intersections.length > 0;
+      // let intersections = raycaster.intersectObjects(dragon.children);
+      // intersections.length > 0;
+      let onObject = false;
       if (onObject === true || d['limit'] == projectileLimit) {
         if (onObject) {
           console.log('충돌햇쪄');
