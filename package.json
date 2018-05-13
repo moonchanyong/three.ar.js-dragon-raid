@@ -5,6 +5,7 @@
   "main": "./dist/three.ar.js",
   "module": "./dist/three.ar.module.js",
   "scripts": {
+    "start": "node index.js",
     "build": "rollup -c",
     "build-min": "rollup -c rollup.config.min.js",
     "build-all": "npm run build && npm run build-min",
@@ -52,6 +53,7 @@
   },
   "repository": "https://github.com/google-ar/three.ar.js",
   "dependencies": {
-    "gl-preserve-state": "^1.0.0"
+    "gl-preserve-state": "^1.0.0",
+    "express": "^4.15.2"
   }
 }
