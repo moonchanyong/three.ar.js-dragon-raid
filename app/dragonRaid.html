@@ -177,9 +177,8 @@ async function init() {
   // orientation/position to the perspective camera, keeping our
   // real world and virtual world in sync.
   vrControls = new THREE.VRControls(camera);
-  console.log('ckpt2');
   raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-  console.log('ckpt2.5');
+
   config = {
     gltfPath: '../model/dragon/scene.gltf',
     decoderPath : './third_party/draco/',
@@ -187,24 +186,20 @@ async function init() {
     DRACOLoader: THREE.DRACOLoader
   };
   THREE.ARUtils.newLoadModel(config).then(function(gltf) {
-    console.log('ckpt3')
     dragon = gltf.scene.children[0].children[0].children[0].children[0];
-    // mixer = new THREE.AnimationMixer(dragon);
+    mixer = new THREE.AnimationMixer(dragon);
     var animations = gltf.animations;
-    console.log('ckpt4')
     if ( animations && animations.length ) {
       var animation = animations[4];
-      // var action = mixer.clipAction( animation );
-      // action.play();
+      var action = mixer.clipAction( animation );
+      action.play();
     }
-    console.log('ckpt6')
-    dragon.scale.set(10,10,10);
+    dragon.scale.set(20,20,20);
     dragon.rotateX( - Math.PI/2 );
     dragon.position.x = 0;
-    dragon.position.y = 0;
+    dragon.position.y = -5;
     dragon.position.z = -10;
     scene.add(dragon);
-    console.log('ckpt7')
   });
 
   // Bind our event handlers
@@ -216,7 +211,6 @@ async function init() {
  renderer.domElement.addEventListener('touchend', function(event) {
     shooting = false;
  });
-  console.log('ckpt1');
   return new Promise(function(resolve, reject){ resolve("resolve")});
 } // end init
 
@@ -234,7 +228,7 @@ async function init() {
 	  // Render the device's camera stream on screen first of all.
 	  // It allows to get the right pose synchronized with the right frame.
 	  arView.render();
-    // if (mixer) mixer.update(clock.getDelta());
+    if (mixer) mixer.update(clock.getDelta());
     var time = performance.now();
     var delta = ( time - prevTime ) / 1000;
     prevTime = time;
