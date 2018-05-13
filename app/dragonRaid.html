@@ -216,9 +216,9 @@ async function init() {
  * our scene and rendering.
  */
  function updateGenerator() {
-	 var args = Array.prototype.slice.call(arguments);
+	 // var args = Array.prototype.slice.call(arguments);
 
-	  var update = function() {
+	  var animate = function() {
 	  // Clears color from the frame before rendering the camera (arView) or scene.
 	  renderer.clearColor();
 
@@ -262,16 +262,16 @@ async function init() {
 
 
 		// custom update
-		args.forEach(function(func) {func()});
+		// args.forEach(function(func) {func()});
 
 	  renderer.clearDepth();
 	  renderer.render(scene, camera);
 
 	  // Kick off the requestAnimationFrame to call this function
 	  // when a new VRDisplay frame is rendered
-	  vrDisplay.requestAnimationFrame(update);
+	  vrDisplay.requestAnimationFrame(animate);
 	}
-  return update;
+  return animate;
 }
 /**
  * On window resize, update the perspective camera's aspect ratio,
