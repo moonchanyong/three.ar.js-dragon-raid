@@ -118,7 +118,7 @@ makeProjectile = function(makeShape, _velocity) {
     limit: 0,
     name: name,
     obj: object,
-    velocity: _velocity.applyQuaternion(new Three.vector3())
+    velocity: _velocity.applyQuaternion(new Three.vector3().quaternion)
   }
 }
 
