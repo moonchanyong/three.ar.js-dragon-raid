@@ -129,7 +129,7 @@ makeProjectile = function(makeShape, _velocity) {
  * a valid display if found. Otherwise, display the unsupported
  * browser message.
  */
-// update = updateGenerator(updateFunc);
+update = updateGenerator(updateFunc);
 THREE.ARUtils.getARDisplay().then(function (display) {
   if (display) {
     vrDisplay = display;
@@ -215,8 +215,8 @@ async function init() {
  * The render loop, called once per frame. Handles updating
  * our scene and rendering.
  */
- // function updateGenerator() {
-	 // var args = Array.prototype.slice.call(arguments);
+ function updateGenerator() {
+	 var args = Array.prototype.slice.call(arguments);
 
 	  var update = function() {
 	  // Clears color from the frame before rendering the camera (arView) or scene.
@@ -262,7 +262,7 @@ async function init() {
 
 
 		// custom update
-		// args.forEach(function(func) {func()});
+		args.forEach(function(func) {func()});
 
 	  renderer.clearDepth();
 	  renderer.render(scene, camera);
@@ -271,8 +271,8 @@ async function init() {
 	  // when a new VRDisplay frame is rendered
 	  vrDisplay.requestAnimationFrame(update);
 	}
-//   return update;
-// }
+  return update;
+}
 /**
  * On window resize, update the perspective camera's aspect ratio,
  * and call `updateProjectionMatrix` so that we can get the latest
