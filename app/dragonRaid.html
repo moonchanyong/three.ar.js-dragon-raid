@@ -104,8 +104,8 @@ makeSphere = function() {
   var geometry = new THREE.SphereGeometry( 5, 32, 32 );
   var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
   var sphere = new THREE.Mesh( geometry, material );
-  sphere.position.copy(controls.getObject().position)
-  console.log(controls.getObject().quaternion)
+  sphere.position.copy(camera.position)
+  console.log(camera.quaternion)
   scene.add( sphere );
   return sphere;
 }
@@ -118,7 +118,7 @@ makeProjectile = function(makeShape, _velocity) {
     limit: 0,
     name: name,
     obj: object,
-    velocity: _velocity.applyQuaternion(controls.getObject().quaternion)
+    velocity: _velocity.applyQuaternion(camera.quaternion)
   }
 }
 
