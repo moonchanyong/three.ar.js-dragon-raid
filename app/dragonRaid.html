@@ -231,34 +231,35 @@ function init() {
     prevTime = time;
 	  // Update our camera projection matrix in the event that
 	  // the near or far planes have updated
-	  camera.updateProjectionMatrix();
 
-	  // Update our perspective camera's positioning
-	  vrControls.update();
+    camera.updateProjectionMatrix();
 
-    // shoot
-    if (shooting) projectile.push(makeProjectile(makeSphere, new THREE.Vector3(1,1,1)));
+    // Update our perspective camera's positioning
+    vrControls.update();
+    // // shoot
+    // if (shooting) projectile.push(makeProjectile(makeSphere, new THREE.Vector3(1,1,1)));
+    //
+    // let rmProjectilList = [];
+    // // animate Projectile
+    // projectile.forEach((d, index, object) => {
+    //   // move Projectole
+    //   d['obj'].translateX(d['velocity'].x * ProjectileSpeed * delta);
+    //   d['obj'].translateY(d['velocity'].y * ProjectileSpeed * delta);
+    //   d['obj'].translateZ(d['velocity'].z * ProjectileSpeed * delta);
+    //   d['limit'] +=1;
+    //   raycaster.ray.origin.copy(d['obj'].position);
+    //   // let intersections = raycaster.intersectObjects(dragon.children);
+    //   // intersections.length > 0;
+    //   let onObject = false;
+    //   if (onObject === true || d['limit'] == projectileLimit) {
+    //     if (onObject) {
+    //       console.log('충돌햇쪄');
+    //     }
+    //     rmProjectilList.push(index);
+    //   }
+    // });
+    // rmProjectil(rmProjectilList);
 
-    let rmProjectilList = [];
-    // animate Projectile
-    projectile.forEach((d, index, object) => {
-      // move Projectole
-      d['obj'].translateX(d['velocity'].x * ProjectileSpeed * delta);
-      d['obj'].translateY(d['velocity'].y * ProjectileSpeed * delta);
-      d['obj'].translateZ(d['velocity'].z * ProjectileSpeed * delta);
-      d['limit'] +=1;
-      raycaster.ray.origin.copy(d['obj'].position);
-      // let intersections = raycaster.intersectObjects(dragon.children);
-      // intersections.length > 0;
-      let onObject = false;
-      if (onObject === true || d['limit'] == projectileLimit) {
-        if (onObject) {
-          console.log('충돌햇쪄');
-        }
-        rmProjectilList.push(index);
-      }
-    });
-    rmProjectil(rmProjectilList);
 
 		// custom update
 		args.forEach(func => {func()});
