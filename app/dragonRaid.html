@@ -179,7 +179,7 @@ async function init() {
   vrControls = new THREE.VRControls(camera);
   console.log('ckpt2');
   raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-  await THREE.ARUtils.newLoadModel(config).then(function(gltf) {
+  THREE.ARUtils.newLoadModel(config).then(function(gltf) {
     dragon = gltf.scene.children[0].children[0].children[0].children[0];
     mixer = new THREE.AnimationMixer( dragon );
     var animations = gltf.animations;
