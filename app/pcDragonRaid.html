@@ -151,6 +151,28 @@
         instructions.innerHTML = 'Your browser doesn\'t seem to support Pointer Lock API';
       }
 
+
+			makeSphere = function() {
+				var geometry = new THREE.SphereGeometry( 5, 32, 32 );
+				var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+				var sphere = new THREE.Mesh( geometry, material );
+				sphere.position.copy(controls.getObject().position)
+				console.log(controls.getObject().quaternion)
+				scene.add( sphere );
+				return sphere;
+			}
+
+			//  makeShape is return object
+			makeProjectile = function(makeShape, _velocity) {
+				var object = makeShape()
+				console.log(direction)
+				return {
+					obj: object,
+					velocity: _velocity.applyQuaternion(controls.getObject().quaternion)
+				}
+
+			}
+
       var controlsEnabled = false;
       var moveForward = false;
       var moveBackward = false;
@@ -161,8 +183,16 @@
       var velocity = new THREE.Vector3();
       var direction = new THREE.Vector3();
 
+			// custom const
+			const ProjectileSpeed = 50;
+
+
+
 			updateFunc = [];
+			Projectile = [];
+
 			update = updateGenerator(updateFunc);
+
       init().then((d) => {
 				console.log(d);
 				update();
@@ -225,9 +255,8 @@
               moveRight = false;
               break;
             case 70: //f
-              drawing = false;
-              stroke.length = 0;
-              strokeIndex += 1;
+							Projectile.push(makeProjectile(makeSphere, new THREE.Vector3(1,1,1)));
+							console.log(Projectile);
               break;
           }
         };
@@ -253,15 +282,6 @@
         floorMaterial.transparent = true;
         var floor = new THREE.Mesh( floorGeometry, floorMaterial );
         scene.add( floor );
-
-        // objects
-        var boxGeometry = new THREE.BoxGeometry( 20, 20, 20 );
-        for ( var i = 0, l = boxGeometry.faces.length; i < l; i ++ ) {
-          var face = boxGeometry.faces[ i ];
-          face.vertexColors[ 0 ] = new THREE.Color().setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-          face.vertexColors[ 1 ] = new THREE.Color().setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-          face.vertexColors[ 2 ] = new THREE.Color().setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-        }
 
         config = {
           gltfPath: '../model/dragon/scene.gltf',
@@ -334,17 +354,24 @@
 		 	  // Clears color from the frame before rendering the camera (arView) or scene.
 
 				    	renderer.clearColor();
+              // model anomation
 	            if (mixer) mixer.update(clock.getDelta());
-							args.forEach((f)=>{console.log(f)})
+              // webvr Api support to be 60hz
 		        	requestAnimationFrame( animate );
-			        if ( controlsEnabled === true ) {
 
+              // time delta
+              let time = performance.now();
+              let delta = ( time - prevTime ) / 1000;
+              prevTime = time;
+
+              // update pc control
+			        if ( controlsEnabled === true ) {
 				          raycaster.ray.origin.copy( controls.getObject().position );
 				          raycaster.ray.origin.y -= 10;
 				          var intersections = raycaster.intersectObjects( objects );
+                  // 충돌 만큼 배출
 				          var onObject = intersections.length > 0;
-				          var time = performance.now();
-				          var delta = ( time - prevTime ) / 1000;
+
 				          velocity.x -= velocity.x * 10.0 * delta;
 				          velocity.z -= velocity.z * 10.0 * delta;
 				          velocity.y -= 9.8 * 50.0 * delta; // 100.0 = mass
@@ -364,10 +391,18 @@
 				          if ( controls.getObject().position.y < 10 ) {
 				            velocity.y = 0;
 				            controls.getObject().position.y = 10;
+										if(!canJump) console.log(controls.getObject())
 				            canJump = true;
-
 				          }
-				          prevTime = time;
+
+                  // animate Projectile
+									Projectile.forEach(d => {
+                    // move Projectole
+										d['obj'].translateX(d['velocity'].x * ProjectileSpeed * delta);
+										d['obj'].translateY(d['velocity'].y * ProjectileSpeed * delta);
+										d['obj'].translateZ(d['velocity'].z * ProjectileSpeed * delta);
+								})
+
 				        }
 				      // Render our three.js virtual scene
 			        renderer.clearDepth();
