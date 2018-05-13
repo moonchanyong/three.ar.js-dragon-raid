@@ -95,8 +95,8 @@ rmProjectil = function (rmProjectilList)  {
   var descIndex = 0;
   for (i of rmProjectilList) {
    // var selectedObject = scene.getObjectByName(object.name);
-   scene.remove(Projectile[i].obj)
-   Projectile.splice(i-descIndex, 1);
+   scene.remove(projectile[i].obj)
+   projectile.splice(i-descIndex, 1);
    descIndex+=1;
   }
 }
