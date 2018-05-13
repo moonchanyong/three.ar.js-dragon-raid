@@ -133,8 +133,7 @@ update = updateGenerator(updateFunc);
 THREE.ARUtils.getARDisplay().then(function (display) {
   if (display) {
     vrDisplay = display;
-    init();
-    then(function(d) {
+    init().then(function(d) {
       console.log('its okay');
       update();
     });
