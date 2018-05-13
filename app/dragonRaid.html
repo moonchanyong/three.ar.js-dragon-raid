@@ -179,23 +179,26 @@ async function init() {
   vrControls = new THREE.VRControls(camera);
   console.log('ckpt2');
   raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-  THREE.ARUtils.newLoadModel(config).then(function(gltf) {
-    dragon = gltf.scene.children[0].children[0].children[0].children[0];
-    mixer = new THREE.AnimationMixer( dragon );
-    var animations = gltf.animations;
 
+  THREE.ARUtils.newLoadModel(config).then(function(gltf) {
+    console.log('ckpt3')
+    dragon = gltf.scene.children[0].children[0].children[0].children[0];
+    // mixer = new THREE.AnimationMixer(dragon);
+    var animations = gltf.animations;
+    console.log('ckpt4')
     if ( animations && animations.length ) {
       var animation = animations[4];
-      var action = mixer.clipAction( animation );
-      action.play();
+      // var action = mixer.clipAction( animation );
+      // action.play();
     }
-
+    console.log('ckpt6')
     dragon.scale.set(10,10,10);
     dragon.rotateX( - Math.PI/2 );
     dragon.position.x = 0;
     dragon.position.y = 0;
     dragon.position.z = -10;
     scene.add(dragon);
+    console.log('ckpt7')
   });
 
   // Bind our event handlers
