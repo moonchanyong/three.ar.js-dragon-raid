@@ -145,7 +145,8 @@ THREE.ARUtils.getARDisplay().then(function (display) {
 
 var loader = new THREE.GLTFLoader();
 
-async function init() {
+// async
+function init() {
 
   // Setup the three.js rendering environment
   renderer = new THREE.WebGLRenderer({ alpha: true });
@@ -215,9 +216,9 @@ async function init() {
  * our scene and rendering.
  */
  function updateGenerator() {
-	 var args = Array.prototype.slice.call(arguments);
+	 // var args = Array.prototype.slice.call(arguments);
 
-	 return function update() {
+	  let update = () => {
 	  // Clears color from the frame before rendering the camera (arView) or scene.
 	  renderer.clearColor();
 
@@ -269,6 +270,7 @@ async function init() {
 	  // when a new VRDisplay frame is rendered
 	  vrDisplay.requestAnimationFrame(update);
 	}
+  return update;
 }
 /**
  * On window resize, update the perspective camera's aspect ratio,
