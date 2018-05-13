@@ -67,6 +67,15 @@ var loadObj = function loadObj(objPath, materialCreator, OBJLoader) {
     loader.load(objPath, resolve, noop, reject);
   });
 };
+var loadGltf = function loadGltf(gltfPath, GLTFLoader, DRACOLoader) {
+  return new Promise(function (resolve, reject) {
+    var loader = new GLTFLoader();
+    if (DRACOLoader) {
+      loader.setDRACOLoader(new THREE.DRACOLoader());
+    }
+    loader.load(gltfPath, resolve, noop, reject);
+  });
+};
 var loadMtl = function loadMtl(mtlPath, MTLLoader) {
   return new Promise(function (resolve, reject) {
     var loader = new MTLLoader();
@@ -163,6 +172,62 @@ ARUtils.loadModel = function () {
         materialCreator.preload();
       }
       return loadObj(objPath, materialCreator, OBJLoader);
+    }).then(resolve, reject);
+  });
+};
+
+ARUtils.newLoadModel = function () {
+  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  return new Promise(function (resolve, reject) {
+    var mtlPath = config.mtlPath,
+        objPath = config.objPath,
+        gltfPath = config.gltfPath,
+        decoderPath = config.decoderPath;
+    var OBJLoader = config.OBJLoader || (global$1.THREE ? global$1.THREE.OBJLoader : null);
+    var MTLLoader = config.MTLLoader || (global$1.THREE ? global$1.THREE.MTLLoader : null);
+    var GLTFLoader = config.GLTFLoader || (global$1.THREE ? global$1.THREE.GLTFLoader : null);
+    var DRACOLoader = config.DRACOLoader || null;
+    if (!config.objPath && !config.gltfPath) {
+      reject(new Error('`objPath` or `gltfPath` must be specified.'));
+      return;
+    }
+    if (config.objPath && config.gltfPath) {
+      reject(new Error('`objPath` or `gltfPath` must be only one specified.'));
+      return;
+    }
+    if (config.objPath && !OBJLoader) {
+      reject(new Error('Missing OBJLoader as third argument, or window.THREE.OBJLoader existence'));
+      return;
+    }
+    if (config.gltfPath && !GLTFLoader) {
+      reject(new Error('Missing GLTFLoader as third argument, or window.THREE.GLTFLoader existence'));
+      return;
+    }
+    if (config.objPath && config.mtlPath && !MTLLoader) {
+      reject(new Error('Missing MTLLoader as fourth argument, or window.THREE.MTLLoader existence'));
+      return;
+    }
+    if (decoderPath ^ DRACOLoader) {
+      reject(new Error('Missing DRACOLoader as fourth argument, or window.THREE.DRACOLoader existence'));
+      return;
+    }
+    var p = Promise.resolve();
+    if (objPath && mtlPath) {
+      p = loadMtl(mtlPath, MTLLoader);
+    }
+    if (gltfPath && decoderPath) {
+      DRACOLoader.setDecoderPath(decoderPath);
+    }
+    p.then(function (materialCreator) {
+      if (materialCreator) {
+        materialCreator.preload();
+      }
+      if (objPath) {
+        return loadObj(objPath, materialCreator, OBJLoader);
+      }
+      if (gltfPath) {
+        return loadGltf(gltfPath, GLTFLoader, DRACOLoader);
+      }
     }).then(resolve, reject);
   });
 };
