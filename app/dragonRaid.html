@@ -177,6 +177,7 @@ async function init() {
   // orientation/position to the perspective camera, keeping our
   // real world and virtual world in sync.
   vrControls = new THREE.VRControls(camera);
+  console.log('ckpt2');
   raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
   // await THREE.ARUtils.newLoadModel(config).then(function(gltf) {
   //   dragon = gltf.scene.children[0].children[0].children[0].children[0];
@@ -206,8 +207,8 @@ async function init() {
  renderer.domElement.addEventListener('touchend', function(event) {
     shooting = false;
  });
-
-  return new Promise( function(resolve, reject){ resolve("resolve")});
+  console.log('ckpt1');
+  return new Promise(function(resolve, reject){ resolve("resolve")});
 } // end init
 
 /**
