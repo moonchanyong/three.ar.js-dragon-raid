@@ -112,7 +112,7 @@
       *  거리 관련 const는 모두 재설정필요
       *  controls.getObject().position, camera.positiond으로 변경
       */
-
+      var projectileLimit = 100
       var objects = [];
       var raycaster;
       var projectileIndex = 0;
@@ -172,6 +172,7 @@
 
 				console.log(direction)
 				return {
+          limit: 0,
           name: name,
 					obj: object,
 					velocity: _velocity.applyQuaternion(controls.getObject().quaternion)
@@ -439,10 +440,11 @@
 										d['obj'].translateX(d['velocity'].x * ProjectileSpeed * delta);
 										d['obj'].translateY(d['velocity'].y * ProjectileSpeed * delta);
 										d['obj'].translateZ(d['velocity'].z * ProjectileSpeed * delta);
+                    d['limit'] +=1;
                     raycaster.ray.origin.copy(d['obj'].position);
                     let intersections = raycaster.intersectObjects(dragon.children);
                     let onObject = intersections.length > 0;
-                    if ( onObject === true ) {
+                    if (onObject === true || d['limit'] == projectileLimit) {
                       rmProjectilList.push(index)
                     }
 								})
