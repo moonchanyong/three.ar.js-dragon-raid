@@ -179,7 +179,13 @@ async function init() {
   vrControls = new THREE.VRControls(camera);
   console.log('ckpt2');
   raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-
+  console.log('ckpt2.5');
+  config = {
+    gltfPath: '../model/dragon/scene.gltf',
+    decoderPath : './third_party/draco/',
+    GLTFLoader: THREE.GLTFLoader,
+    DRACOLoader: THREE.DRACOLoader
+  };
   THREE.ARUtils.newLoadModel(config).then(function(gltf) {
     console.log('ckpt3')
     dragon = gltf.scene.children[0].children[0].children[0].children[0];
