@@ -135,6 +135,7 @@ THREE.ARUtils.getARDisplay().then(function (display) {
     vrDisplay = display;
     init().then(function(d) {
       console.log('its okay');
+      console.log('update', update)
       update();
     });
   } else {
