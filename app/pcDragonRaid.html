@@ -115,7 +115,7 @@
 
       var objects = [];
       var raycaster;
-
+      var projectileIndex = 0;
       var blocker = document.getElementById( 'blocker' );
       var instructions = document.getElementById( 'instructions' );
       // http://www.html5rocks.com/en/tutorials/pointerlock/intro/
@@ -166,14 +166,20 @@
 
 			//  makeShape is return object
 			makeProjectile = function(makeShape, _velocity) {
-				var object = makeShape()
+				let object = makeShape();
+        let name = 'projectile'+projectileIndex;
+        projectileIndex+=1;
+
 				console.log(direction)
 				return {
+          name: name,
 					obj: object,
 					velocity: _velocity.applyQuaternion(controls.getObject().quaternion)
 				}
 
 			}
+
+
 
       var controlsEnabled = false;
       var moveForward = false;
@@ -192,7 +198,15 @@
 
 			updateFunc = [];
 			Projectile = [];
-
+      rmProjectil = (rmProjectilList) => {
+        let descIndex = 0;
+        for (i of rmProjectilList) {
+         // let selectedObject = scene.getObjectByName(object.name);
+         scene.remove(Projectile[i].obj)
+         Projectile.splice(i-descIndex, 1);
+         descIndex+=1;
+        }
+      }
 			update = updateGenerator(updateFunc);
       var arrow;
       init().then((d) => {
@@ -372,7 +386,6 @@
 		 	 var args = updateFunc;
 		 	 animate = function() {
 		 	  // Clears color from the frame before rendering the camera (arView) or scene.
-
 				    	renderer.clearColor();
               // model anomation
 	            if (mixer) mixer.update(clock.getDelta());
@@ -419,8 +432,9 @@
 				            canJump = true;
 				          }
 
+                  let rmProjectilList = [];
                   // animate Projectile
-									Projectile.forEach(d => {
+									Projectile.forEach((d, index, object) => {
                     // move Projectole
 										d['obj'].translateX(d['velocity'].x * ProjectileSpeed * delta);
 										d['obj'].translateY(d['velocity'].y * ProjectileSpeed * delta);
@@ -429,9 +443,10 @@
                     let intersections = raycaster.intersectObjects(dragon.children);
                     let onObject = intersections.length > 0;
                     if ( onObject === true ) {
-                      console.log('충돌햇당!')
+                      rmProjectilList.push(index)
                     }
 								})
+                rmProjectil(rmProjectilList);
 
 				        }
 				      // Render our three.js virtual scene
