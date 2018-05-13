@@ -81,11 +81,11 @@
 <script>
 // declare
 var vrDisplay, vrControls, arView;
-var canvas, camera, scene, renderer;
-var prevTime, raycaster, shooting;
+var canvas, camera, scene, renderer, mixer;
+var prevTime, raycaster, shooting, dragon;
 var projectile = [];
 var updateFunc = [];
-var dragon;
+
 var ProjectileSpeed = 5;
 var projectileLimit = 50;
 
@@ -179,24 +179,24 @@ async function init() {
   vrControls = new THREE.VRControls(camera);
   console.log('ckpt2');
   raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-  // await THREE.ARUtils.newLoadModel(config).then(function(gltf) {
-  //   dragon = gltf.scene.children[0].children[0].children[0].children[0];
-  //   mixer = new THREE.AnimationMixer( dragon );
-  //   var animations = gltf.animations;
-  //
-  //   if ( animations && animations.length ) {
-  //     var animation = animations[4];
-  //     var action = mixer.clipAction( animation );
-  //     action.play();
-  //   }
-  //
-  //   dragon.scale.set(10,10,10);
-  //   dragon.rotateX( - Math.PI/2 );
-  //   dragon.position.x = 0;
-  //   dragon.position.y = 0;
-  //   dragon.position.z = -10;
-  //   scene.add(dragon);
-  // });
+  await THREE.ARUtils.newLoadModel(config).then(function(gltf) {
+    dragon = gltf.scene.children[0].children[0].children[0].children[0];
+    mixer = new THREE.AnimationMixer( dragon );
+    var animations = gltf.animations;
+
+    if ( animations && animations.length ) {
+      var animation = animations[4];
+      var action = mixer.clipAction( animation );
+      action.play();
+    }
+
+    dragon.scale.set(10,10,10);
+    dragon.rotateX( - Math.PI/2 );
+    dragon.position.x = 0;
+    dragon.position.y = 0;
+    dragon.position.z = -10;
+    scene.add(dragon);
+  });
 
   // Bind our event handlers
   window.addEventListener('resize', onWindowResize, false);
