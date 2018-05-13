@@ -112,7 +112,7 @@
       *  거리 관련 const는 모두 재설정필요
       *  controls.getObject().position, camera.positiond으로 변경
       */
-      var projectileLimit = 100
+      var projectileLimit = 500;
       var objects = [];
       var raycaster;
       var projectileIndex = 0;
@@ -313,26 +313,22 @@
 
         await THREE.ARUtils.newLoadModel(config).then(function(gltf) {
           dragon = gltf.scene.children[0].children[0].children[0].children[0];
-          dragon.scale.set(100,100,100);
-          dragon.rotateX( - Math.PI/2 );
+
           mixer = new THREE.AnimationMixer( dragon );
           var animations = gltf.animations;
           if ( animations && animations.length ) {
             // for ( var i = 0; i < animations.length; i ++ ) {
-              var animation = animations[ 0 ];
-              console.log(animation)
+              var animation = animations[4];
               // There's .3333 seconds junk at the tail of the Monster animation that
               // keeps it from looping cleanly. Clip it at 3 seconds
-               animation.duration = 0.8;
-
             var action = mixer.clipAction( animation );
-            action.setLoop(THREE.LoopOnce, 1);
-            console.log(action);
+            // action.setLoop(THREE.LoopRepeat, 1);
             action.play();
 
             // }
           }
-
+          dragon.scale.set(100,100,100);
+          dragon.rotateX( - Math.PI/2 );
 
           // var _dragonMeterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: THREE.VertexColors } );
           // _dragonMeterial.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
@@ -392,13 +388,7 @@
 	            if (mixer) mixer.update(clock.getDelta());
               // webvr Api support to be 60hz
 		        	requestAnimationFrame( animate );
-              // arrow.setDirection(raycaster.ray.direction);
-              // raycaster.set(controls.getObject().position, camera.getWorldDirection());
-               // var intersects = raycaster.intersectObjects(dragon.children);
-               // intersects += raycaster.intersectObject(dragon);
-               // if (intersects.length > 0) {
-               //   console.log(intersects);
-               // }
+
               // time delta
               let time = performance.now();
               let delta = ( time - prevTime ) / 1000;
@@ -445,6 +435,9 @@
                     let intersections = raycaster.intersectObjects(dragon.children);
                     let onObject = intersections.length > 0;
                     if (onObject === true || d['limit'] == projectileLimit) {
+                      if (onObject) {
+                        console.log('충돌햇쪄');
+                      }
                       rmProjectilList.push(index)
                     }
 								})
