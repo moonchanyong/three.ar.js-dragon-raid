@@ -159,7 +159,7 @@
 				var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
 				var sphere = new THREE.Mesh( geometry, material );
 				sphere.position.copy(controls.getObject().position)
-				console.log(controls.getObject().quaternion)
+				console.log(camera.getWorldDirection())
 				scene.add( sphere );
 				return sphere;
 			}
@@ -175,7 +175,7 @@
           limit: 0,
           name: name,
 					obj: object,
-					velocity: _velocity.applyQuaternion(controls.getObject().quaternion)
+					velocity: camera.getWorldDirection()
 				}
 
 			}
@@ -226,7 +226,7 @@
         var light = new THREE.HemisphereLight( 0xeeeeff, 0x777788, 0.75 );
         light.position.set( 0.5, 1, 0.75 );
         scene.add( light );
-        controls = new THREE.PointerLockControls( camera );
+        controls = new THREE.PointerLockControls(camera);
         scene.add( controls.getObject() );
 
         var onKeyDown = function ( event ) {
@@ -306,7 +306,7 @@
 
         config = {
           gltfPath: '../model/dragon/scene.gltf',
-          decoderPath : './third_party/draco/',
+          decoderPath : '../third_party/draco/',
           GLTFLoader: THREE.GLTFLoader,
           DRACOLoader: THREE.DRACOLoader
         };
@@ -388,6 +388,12 @@
 	            if (mixer) mixer.update(clock.getDelta());
               // webvr Api support to be 60hz
 		        	requestAnimationFrame( animate );
+              // update the position of arrow
+              arrow.setDirection(raycaster.ray.direction);
+
+              // update the raycaster
+              // raycaster.set(controls.getObject().getWorldPosition(), camera.getWorldDirection());
+
 
               // time delta
               let time = performance.now();
